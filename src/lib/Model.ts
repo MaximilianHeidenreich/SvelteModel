@@ -108,7 +108,7 @@ export function createModel<T>(options?: ModelOptions<T>) {
 		 *
 		 * @param mutation The mutation object -> keys will override store data keys
 		 */
-		const mutate = (mutation: Object) => {
+		const mutate = (mutation: T) => {
 			// Custom mut fn
 			if (opts.mutateFn) {
 				opts.mutateFn(mutation);
