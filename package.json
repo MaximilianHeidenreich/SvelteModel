@@ -1,6 +1,6 @@
 {
 	"name": "sveltemodel",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"scripts": {
 		"dev": "svelte-kit dev",
 		"build": "svelte-kit build",
@@ -10,7 +10,8 @@
 		"check:watch": "svelte-check --tsconfig ./tsconfig.json --watch",
 		"test": "npm run check",
 		"lint": "prettier --ignore-path .gitignore --check --plugin-search-dir=. .",
-		"format": "prettier --ignore-path .gitignore --write --plugin-search-dir=. ."
+		"format": "prettier --ignore-path .gitignore --write --plugin-search-dir=. .",
+		"pub": "npm publish ./package"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "next",
