@@ -1,4 +1,4 @@
-import { get, writable } from 'svelte/store';
+import { derived, get, writable } from 'svelte/store';
 
 export type Updater<T> = (value: T) => T;
 export interface OpError {
@@ -27,6 +27,9 @@ export interface ModelOptions<T> {
 	 */
 	allowUndefinedData?: boolean;
 	loadOnCreate?: boolean;
+
+	derived?: any; // One or more stores, will trigger load function every time these stores change!
+
 	saveFn?: SaveFunction<T>;
 	loadFn?: LoadFunction<T>;
 	mutateFn?: MutateFunction<T>;
@@ -49,6 +52,12 @@ export function createModel<T>(options?: ModelOptions<T>) {
 		// Svelte Store
 		const { subscribe, set, update } = writable<T>();
 
+		// PROMISES
+		let initializedPromiseResolver: (value: any) => void;
+		const initializedPromise = new Promise((res, rej) => {
+			initializedPromiseResolver = res;
+		});
+
 		/**
 		 * Loads data from loadFn and sets store value to result.
 		 *
@@ -64,6 +73,7 @@ export function createModel<T>(options?: ModelOptions<T>) {
 			if (loadedData) {
 				// @ts-ignore
 				set(loadedData);
+				initializedPromiseResolver(true);
 				return loadedData;
 			} else {
 				return undefined;
@@ -144,15 +154,30 @@ export function createModel<T>(options?: ModelOptions<T>) {
 		};
 
 		// Initialization
-		const INITIALIZED = new Promise(async (resolve, reject) => {
+		/*const INITIALIZED = new Promise(async (resolve, reject) => {
 			if (opts.loadOnCreate && opts.loadFn) {
 				let l = await cLoad();
-				if (l) resolve(l);
-				else reject(undefined);
-			} else {
-				resolve({});
+                if (l) initializedPromiseResolver(true)
+				//if (l) resolve(l);
+				//else reject(undefined);
 			}
-		});
+		});*/
+
+		(async () => {
+			if (opts.loadOnCreate && opts.loadFn) {
+				let l = await cLoad();
+				if (l) initializedPromiseResolver(true);
+				//if (l) resolve(l);
+				//else reject(undefined);
+			}
+		})();
+
+		// Derived updater
+		if (options.derived) {
+			let derivedStore = derived(options.derived, () => {
+				cLoad();
+			});
+		}
 
 		return {
 			subscribe,
@@ -161,7 +186,7 @@ export function createModel<T>(options?: ModelOptions<T>) {
 			set: cSet, // Custom setFn
 
 			load: cLoad, // Loads and sets value from loadFn
-			initialized: INITIALIZED // Promise which can be used to change app state on end of initialization / loading TODO: Exapmle with .catch -> reload
+			initialized: initializedPromise // Promise which can be used to change app state on end of initialization / loading TODO: Exapmle with .catch -> reload
 		};
 	})();
 
@@ -170,7 +195,7 @@ export function createModel<T>(options?: ModelOptions<T>) {
 		update: store.update,
 		mutate: store.mutate,
 		set: store.set,
-		get: async (): Promise<T> => await get(store),
+		get: () => get(store),
 
 		load: store.load,
 		initialized: store.initialized
