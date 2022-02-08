@@ -17,6 +17,9 @@ export interface LoadFunction<T> {
 export interface MutateFunction<T> {
 	(o: Object): void;
 }
+export interface UpdateFunction<T> {
+	(o: T): T;
+}
 export interface OnInitCallback<T> {
 	(o: T | undefined): void;
 }
@@ -33,6 +36,7 @@ export interface ModelOptions<T> {
 	saveFn?: SaveFunction<T>;
 	loadFn?: LoadFunction<T>;
 	mutateFn?: MutateFunction<T>;
+	updateFn?: UpdateFunction<T>; // Called before default update
 
 	/**
 	 * Useful when using loadOnCreate and wanting to change app state when initial loading has completed.
@@ -102,11 +106,12 @@ export function createModel<T>(options?: ModelOptions<T>) {
 
 		/**
 		 * Updates the store value and calls saveFn for persistance.
-		 *
+		 *  TODO!: Fix dis
 		 * @param updater The updater function
 		 */
 		const cUpdate = (updater: Updater<T>) => {
 			update((v) => {
+				if (options.updateFn) v = options.updateFn(v);
 				v = updater(v);
 				if (opts.saveFn) opts.saveFn(v);
 				return v;
